@@ -1,38 +1,109 @@
-const express = require('express');
-const bodyParser = require('body-parser');
-const cors = require('cors');
-const dotenv = require('dotenv');
+const {log} = require ("console")
+const express = require('express')
+const app = express()
+const { MongoClient } = require('mongodb');
+const bodyParser = require('body-parser')
+var cors = require('cors')
+app.use(cors())
 
-// Dotenv is a zero-dependency module that loads environment variables from a .env file into process.env
-
-const app = express();
+app.use(bodyParser.urlencoded({extended:false}));
 app.use(bodyParser.json());
-app.use(cors());
-// Middleware
-// app.use('/employees', () => {
-//     console.log('Middleware Running');
-// });
+const url = "mongodb://localhost:27017/PARCIAL2";
 
-// Routes 
-// app.get('/', (req, res) => {
-//     res.send('Hello World');
-// });
+const dbname="base de datos";
+
+app.get('/', function (req, res) {
+  res.send('servidor cargando...')
+})
+
+//busqueda total en la base de datos
+app.get('/data', async function (req, res) {
+  const client = new MongoClient(url);
+  await client.connect();
+   const collection = client.db().collection(dbname);
+   const estimate = await collection.estimatedDocumentCount();
+   const findResult = await collection.find({}).toArray();
+   res.send(findResult);
+   console.log(`numero de datos : ${estimate}`);
+})
+
+//filtrado
+app.get('/data/reserva', async function (req, res) {
+   const client = new MongoClient(url);
+   await client.connect();
+    const collection = client.db().collection(dbname);
+    const filtros = await collection.find(  {estado:"sin reservar"}
+    
+    
+ ).toArray();
+    res.send(filtros);
+ })
 
 
-// app.get('/employees', (req, res) => {
-//     res.send('Employees');
-// });
+   //agregar 
+app.post('/data/registro', async function (req, res) {
+  const client = new MongoClient(url);
+  await client.connect();
+   const collection = client.db().collection(dbname);
+   const insertResult = await collection.insertMany(req.body)
+   if(insertResult){
 
-const connectDB = require('./config/db');
-// Load Config
-dotenv.config({path: './config/config.env'})
+      res.send({status : "Cliente ha recibido paquete"});
+   }
+   else{
 
-connectDB();
+    res.send({status : "error"});
+   }
+  })
 
-// Routes
-app.use('/', require('./routes/index'));
+//modificar
+  app.put('/data/reserva/:id', async function (req, res) {
+    const client = new MongoClient(url);
+    await client.connect();
+     const collection = client.db().collection(dbname);
+     const updateResult = await collection.updateOne({ inmueble: req.params.id }, { $set: { estado:"reservado" } });
+    
+     if(updateResult){
 
-app.listen(5000);
+      res.send({status : req.body.estado});
+   }
+   else{
+
+    res.send({status : "error"});
+   }
+  })
+
+  //eliminar
+
+  /*
+  app.delete('/data/reserva/:id', async function (req, res) {
+    const client = new MongoClient(url);
+    await client.connect();
+     const collection = client.db().collection(dbname);
+  const deleteResult = await collection.deleteOne({ inmueble: req.params.id });
+  if(deleteResult){
+
+    res.send({status :"BORRADO CON EXITO"});
+ }
+ else{
+
+  res.send({status : "error"});
+ }
+})*/
 
 
 
+
+  
+
+
+   
+    
+MongoClient.connect(url, function(err, db) {
+
+ if (err) throw err;
+
+ console.log("Hay conexión!");
+ app.listen(5000)
+ db.close();
+});
