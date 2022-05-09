@@ -61,7 +61,7 @@ app.post('/data/registro', async function (req, res) {
     const client = new MongoClient(url);
     await client.connect();
      const collection = client.db().collection(dbname);
-     const updateResult = await collection.updateOne({ inmueble: req.params.id }, { $set: { estado:"reservado" } });
+     const updateResult = await collection.updateOne({ cod_envio: req.params.id }, { $set: {status:req.body} });
     
      if(updateResult){
 
@@ -91,14 +91,17 @@ app.post('/data/registro', async function (req, res) {
  }
 })*/
 
+app.get('/cedula', async function (req, res) {
+   const client = new MongoClient(url);
+   await client.connect();
+    const collection = client.db().collection(dbname);
+    const filteredDocs = await collection.find(  {$or: [
+     {DNI_recepcion: req.body},
+     {cod_envio: req.body},
+ ]}).toArray();
+    res.send(filteredDocs);
+ })
 
-
-
-  
-
-
-   
-    
 MongoClient.connect(url, function(err, db) {
 
  if (err) throw err;
